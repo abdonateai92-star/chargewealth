@@ -9,8 +9,6 @@ import {
   increment,
   getDoc,
   setDoc,
-  query,
-  where,
 } from "firebase/firestore";
 import { db } from "@/app/firebase";
 
@@ -128,19 +126,6 @@ function StatCard({ title, value }: any) {
   );
 }
 
-/* ================================================= */
-/* ✅ FIX FUNCTION (المهمة جدا) */
-/* ================================================= */
-
-async function getUserDocId(userId: string) {
-  const snap = await getDocs(
-    query(collection(db, "users"), where("userId", "==", userId))
-  );
-
-  if (snap.empty) return null;
-  return snap.docs[0].id;
-}
-
 /* ================== PAYMENTS ================== */
 
 function Payments() {
@@ -156,40 +141,25 @@ function Payments() {
     fetchPayments();
   }, []);
 
-const approvePayment = async (p: any) => {
+  // ✅ الموافقة الصحيحة
+  const approvePayment = async (p: any) => {
+    // ✅ تحديث حالة الإيداع
+    await updateDoc(doc(db, "payments", p.id), {
+      status: "approved",
+    });
 
-  // ✅ تحديث حالة الإيداع Approved
-  await updateDoc(doc(db, "payments", p.id), {
-    status: "approved",
-  });
-
-  // ✅ إضافة الرصيد للمستخدم
-  await updateDoc(doc(db, "users", p.userId), {
-    balance: increment(p.amount),
-  });
-
-  // ✅ حفظ الباقة اللي اشترك فيها المستخدم
-  await updateDoc(doc(db, "users", p.userId), {
-    packageId: p.packageId || 1,
-  });
-
-  alert("✅ تم قبول الإيداع وتفعيل الباقة بنجاح");
-
-  fetchPayments();
-};
-
-    const userDocId = await getUserDocId(p.userId);
-
-    if (!userDocId) {
-      alert("❌ المستخدم غير موجود");
-      return;
-    }
-
-    await updateDoc(doc(db, "users", userDocId), {
+    // ✅ إضافة الرصيد للمستخدم
+    await updateDoc(doc(db, "users", p.userId), {
       balance: increment(p.amount),
     });
 
-    alert("✅ تم قبول الإيداع وإضافة الرصيد");
+    // ✅ حفظ الباقة للمستخدم
+    await updateDoc(doc(db, "users", p.userId), {
+      packageId: p.packageId || 1,
+    });
+
+    alert("✅ تم قبول الإيداع وتفعيل الباقة بنجاح");
+
     fetchPayments();
   };
 
@@ -240,14 +210,7 @@ function Withdrawals() {
       status: "approved",
     });
 
-    const userDocId = await getUserDocId(w.userId);
-
-    if (!userDocId) {
-      alert("❌ المستخدم غير موجود");
-      return;
-    }
-
-    await updateDoc(doc(db, "users", userDocId), {
+    await updateDoc(doc(db, "users", w.userId), {
       balance: increment(-w.amount),
     });
 
