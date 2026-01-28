@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+export const dynamic = "force-dynamic";
+
 import { useSearchParams, useRouter } from "next/navigation";
-import { addDoc, collection } from "firebase/firestore";
-import { auth, db } from "@/app/firebase";
 
 export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const packageId = searchParams.get("package") || "1";
+  const packageId = searchParams.get("package");
 
+  // ✅ بيانات الباقات
   const packages: any = {
     1: { price: 80, profit: 1 },
     2: { price: 150, profit: 3 },
@@ -19,32 +19,10 @@ export default function PaymentPage() {
     5: { price: 1000, profit: 10 },
   };
 
-  const selectedPackage = packages[packageId];
+  const selectedPackage = packages[packageId || 1];
 
+  // ✅ عنوان محفظة الإدارة الرسمي
   const walletAddress = "TWa3Jc6572z52K1EkLReXJUEFF11a8C7jT";
-
-  // ✅ المبلغ اللي المستخدم هيكتبه
-  const [amount, setAmount] = useState("");
-
-  // ✅ إرسال طلب الدفع للإدارة
-  const confirmPayment = async () => {
-    if (!amount) return alert("❌ اكتب مبلغ التحويل");
-
-    const user = auth.currentUser;
-    if (!user) return alert("❌ لازم تسجل دخول الأول");
-
-    await addDoc(collection(db, "payments"), {
-      userId: user.uid,
-      amount: Number(amount),
-      packageId: Number(packageId),
-      status: "pending",
-      createdAt: new Date(),
-    });
-
-    alert("✅ تم إرسال طلب الدفع للإدارة بنجاح");
-
-    router.push("/dashboard");
-  };
 
   return (
     <div
@@ -91,21 +69,21 @@ export default function PaymentPage() {
           }}
         >
           <p style={{ color: "white", margin: "6px 0" }}>
-            ⭐ الباقة المختارة:
+            ⭐ الباقة المختارة:{" "}
             <span style={{ color: "gold", fontWeight: "bold" }}>
               #{packageId}
             </span>
           </p>
 
           <p style={{ color: "white", margin: "6px 0" }}>
-            💰 سعر الاشتراك:
+            💰 سعر الاشتراك:{" "}
             <span style={{ color: "gold", fontWeight: "bold" }}>
               {selectedPackage.price}$ USDT
             </span>
           </p>
 
           <p style={{ color: "white", margin: "6px 0" }}>
-            📈 الربح اليومي:
+            📈 الربح اليومي:{" "}
             <span style={{ color: "#00ff99", fontWeight: "bold" }}>
               {selectedPackage.profit}$ يومياً
             </span>
@@ -133,27 +111,18 @@ export default function PaymentPage() {
           {walletAddress}
         </div>
 
-        {/* ✅ Input كتابة مبلغ التحويل */}
-        <input
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="💵 اكتب مبلغ التحويل بالدولار"
-          type="number"
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: "12px",
-            border: "1px solid gold",
-            background: "black",
-            color: "white",
-            marginBottom: "15px",
-            fontSize: "15px",
-          }}
-        />
+        {/* ✅ Warning */}
+        <p style={{ color: "#ccc", fontSize: "13px", marginBottom: "15px" }}>
+          ⚠ بعد التحويل اضغط على زر{" "}
+          <span style={{ color: "gold" }}>تأكيد الدفع</span> وسيتم مراجعة
+          العملية من الإدارة وتفعيل اشتراكك خلال وقت قصير.
+        </p>
 
         {/* ✅ Confirm Button */}
         <button
-          onClick={confirmPayment}
+          onClick={() =>
+            alert("✅ تم إرسال طلب الدفع للإدارة بنجاح! سيتم التفعيل قريباً.")
+          }
           style={{
             width: "100%",
             padding: "13px",
