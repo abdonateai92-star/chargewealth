@@ -8,63 +8,61 @@ export default function HomePage() {
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-[#0b1220] flex justify-center items-center px-6"
+      className="min-h-screen bg-gradient-to-b from-[#050505] to-[#111] flex justify-center items-center px-6"
     >
-      {/* ✅ Card */}
-      <div className="w-full max-w-4xl bg-[#020617]/80 border border-yellow-500 rounded-[40px] shadow-2xl backdrop-blur-xl p-14 text-center">
+      <div className="w-full max-w-4xl border-2 border-yellow-500 rounded-[40px] p-10 bg-[#0b1220]/90 shadow-2xl">
 
         {/* ✅ Logo + Title */}
-        <h1 className="text-6xl font-extrabold text-yellow-400 mb-4 drop-shadow-lg">
-          ⚡ Charge Wealth
+        <h1 className="text-5xl font-extrabold text-yellow-400 text-center mb-3">
+          Charge Wealth ⚡
         </h1>
 
-        <p className="text-gray-300 text-lg max-w-xl mx-auto leading-relaxed mb-10">
-          منصة استثمار حديثة تمنحك أرباح يومية ثابتة  
-          وسحب سريع وأمان كامل بأفضل تجربة مستخدم 💰
+        <p className="text-center text-gray-300 mb-10 text-lg">
+          منصة استثمار حديثة تمنحك أرباح يومية وسحب سريع بأمان كامل
         </p>
 
         {/* ✅ Buttons */}
-        <div className="flex flex-col md:flex-row gap-5 justify-center mb-10">
+        <div className="flex flex-col md:flex-row justify-center gap-5 mb-12">
 
-          {/* ✅ Login */}
           <button
             onClick={() => router.push("/login")}
-            className="bg-yellow-500 hover:bg-yellow-400 text-black px-10 py-4 rounded-full font-bold text-xl transition shadow-lg"
+            className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-10 py-4 rounded-full text-lg transition"
           >
             🔐 تسجيل الدخول
           </button>
 
-          {/* ✅ Register */}
           <button
             onClick={() => router.push("/register")}
-            className="bg-[#0f172a] border border-yellow-500 hover:bg-yellow-500 hover:text-black px-10 py-4 rounded-full font-bold text-xl transition shadow-lg"
+            className="border border-yellow-400 hover:bg-yellow-500 hover:text-black text-yellow-400 font-bold px-10 py-4 rounded-full text-lg transition"
           >
             ✨ إنشاء حساب جديد
           </button>
+
         </div>
 
-        {/* ✅ Features Section */}
-        <div className="grid md:grid-cols-3 gap-6 mt-12 text-right">
-
-          <FeatureCard
-            title="📈 أرباح يومية"
-            desc="احصل على دخل ثابت يوميًا من خلال باقات استثمار مضمونة."
-          />
-
-          <FeatureCard
-            title="🏦 سحب سريع"
-            desc="طلبات السحب يتم تنفيذها خلال 4 أيام عمل بكل سهولة."
-          />
+        {/* ✅ Features Cards */}
+        <div className="grid md:grid-cols-3 gap-6">
 
           <FeatureCard
             title="🔒 أمان كامل"
-            desc="نظام آمن وبيانات محمية بالكامل داخل Firestore."
+            desc="بياناتك محمية بالكامل داخل نظام Firestore"
           />
+
+          <FeatureCard
+            title="⚡ سحب سريع"
+            desc="طلبات السحب تتم مراجعتها خلال 4 أيام عمل"
+          />
+
+          <FeatureCard
+            title="💰 أرباح يومية"
+            desc="احصل على أرباح ثابتة يومياً حسب الباقة"
+          />
+
         </div>
 
         {/* ✅ Footer */}
-        <p className="text-gray-500 text-sm mt-14">
-          © {new Date().getFullYear()} Charge Wealth — جميع الحقوق محفوظة
+        <p className="text-center text-gray-500 mt-12 text-sm">
+          © Charge Wealth 2026 — جميع الحقوق محفوظة
         </p>
       </div>
     </div>
@@ -72,10 +70,11 @@ export default function HomePage() {
 }
 
 /* ✅ Feature Card Component */
+
 function FeatureCard({ title, desc }: any) {
   return (
-    <div className="bg-[#0f172a] border border-yellow-500 rounded-2xl p-6 shadow-md hover:scale-[1.03] transition">
-      <h2 className="text-xl font-bold text-yellow-400 mb-3">{title}</h2>
+    <div className="bg-[#0f172a] border border-yellow-500 rounded-2xl p-6 text-center hover:scale-[1.03] transition">
+      <h2 className="text-xl font-bold text-yellow-400 mb-2">{title}</h2>
       <p className="text-gray-300 text-sm leading-relaxed">{desc}</p>
     </div>
   );
