@@ -35,13 +35,10 @@ export default function AdminPage() {
 
         <MenuItem title="📊 الرئيسية" onClick={() => setTab("dashboard")} />
         <MenuItem title="💰 طلبات الإيداع" onClick={() => setTab("payments")} />
-        <MenuItem
-          title="🏦 طلبات السحب"
-          onClick={() => setTab("withdrawals")}
-        />
-        <MenuItem title="👥 إدارة المستخدمين" onClick={() => setTab("users")} />
+        <MenuItem title="🏦 طلبات السحب" onClick={() => setTab("withdrawals")} />
+        <MenuItem title="👥 المستخدمين" onClick={() => setTab("users")} />
         <MenuItem title="📦 الباقات" onClick={() => setTab("plans")} />
-        <MenuItem title="⚙️ إعدادات الأدمن" onClick={() => setTab("settings")} />
+        <MenuItem title="⚙️ الإعدادات" onClick={() => setTab("settings")} />
       </aside>
 
       {/* Content */}
@@ -59,7 +56,7 @@ export default function AdminPage() {
 
 /* ================== UI ================== */
 
-function MenuItem({ title, onClick }: { title: string; onClick: () => void }) {
+function MenuItem({ title, onClick }: any) {
   return (
     <button
       onClick={onClick}
@@ -78,25 +75,22 @@ function Dashboard() {
     users: 0,
     pendingPayments: 0,
     pendingWithdraws: 0,
-    plans: 0,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
       const usersSnap = await getDocs(collection(db, "users"));
-      const paymentsSnap = await getDocs(collection(db, "payments"));
-      const withdrawSnap = await getDocs(collection(db, "withdrawRequests"));
-      const plansSnap = await getDocs(collection(db, "plans"));
+      const paySnap = await getDocs(collection(db, "payments"));
+      const withSnap = await getDocs(collection(db, "withdrawRequests"));
 
       setStats({
         users: usersSnap.size,
-        pendingPayments: paymentsSnap.docs.filter(
+        pendingPayments: paySnap.docs.filter(
           (d) => d.data().status === "pending"
         ).length,
-        pendingWithdraws: withdrawSnap.docs.filter(
+        pendingWithdraws: withSnap.docs.filter(
           (d) => d.data().status === "pending"
         ).length,
-        plans: plansSnap.size,
       });
     };
 
@@ -105,13 +99,12 @@ function Dashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8">📊 الإحصائيات العامة</h1>
+      <h1 className="text-3xl font-bold mb-6">📊 إحصائيات الأدمن</h1>
 
       <div className="grid grid-cols-2 gap-6">
         <StatCard title="👥 عدد المستخدمين" value={stats.users} />
         <StatCard title="💰 إيداعات معلقة" value={stats.pendingPayments} />
         <StatCard title="🏦 سحوبات معلقة" value={stats.pendingWithdraws} />
-        <StatCard title="📦 عدد الباقات" value={stats.plans} />
       </div>
     </div>
   );
@@ -120,20 +113,27 @@ function Dashboard() {
 function StatCard({ title, value }: any) {
   return (
     <div className="bg-[#020617] border border-yellow-500 rounded-xl p-6">
-      <p className="text-gray-400 text-lg mb-2">{title}</p>
+      <p className="text-gray-400 mb-2">{title}</p>
       <p className="text-4xl font-bold text-yellow-400">{value}</p>
     </div>
   );
 }
 
-/* ================== PAYMENTS ================== */
+/* ================== PAYMENTS (طلبات الإيداع) ================== */
 
 function Payments() {
   const [payments, setPayments] = useState<any[]>([]);
 
+  // ✅ تحميل طلبات الإيداع
   const fetchPayments = async () => {
     const snap = await getDocs(collection(db, "payments"));
-    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    const data = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
+
+    // ✅ فقط الطلبات pending
     setPayments(data.filter((p: any) => p.status === "pending"));
   };
 
@@ -141,31 +141,32 @@ function Payments() {
     fetchPayments();
   }, []);
 
-  // ✅ الموافقة الصحيحة
+  // ✅ قبول الإيداع
   const approvePayment = async (p: any) => {
-    // ✅ تحديث حالة الإيداع
+    // تحديث حالة الطلب
     await updateDoc(doc(db, "payments", p.id), {
       status: "approved",
     });
 
-    // ✅ إضافة الرصيد للمستخدم
+    // إضافة الرصيد + حفظ الباقة
     await updateDoc(doc(db, "users", p.userId), {
       balance: increment(p.amount),
-    });
-
-    // ✅ حفظ الباقة للمستخدم
-    await updateDoc(doc(db, "users", p.userId), {
       packageId: p.packageId || 1,
     });
 
-    alert("✅ تم قبول الإيداع وتفعيل الباقة بنجاح");
+    alert("✅ تم قبول الإيداع وشحن الرصيد");
 
     fetchPayments();
   };
 
+  // ✅ رفض الإيداع
   const rejectPayment = async (id: string) => {
-    await updateDoc(doc(db, "payments", id), { status: "rejected" });
+    await updateDoc(doc(db, "payments", id), {
+      status: "rejected",
+    });
+
     alert("❌ تم رفض الإيداع");
+
     fetchPayments();
   };
 
@@ -174,7 +175,7 @@ function Payments() {
       <h1 className="text-3xl font-bold mb-6">💰 طلبات الإيداع</h1>
 
       {payments.length === 0 && (
-        <p className="text-gray-400">✅ لا توجد طلبات إيداع</p>
+        <p className="text-gray-400">✅ لا توجد طلبات حالياً</p>
       )}
 
       {payments.map((p) => (
@@ -182,6 +183,7 @@ function Payments() {
           key={p.id}
           title={`👤 المستخدم: ${p.userId}`}
           amount={`💵 المبلغ: ${p.amount}$`}
+          extra={`📦 الباقة: ${p.packageId}`}
           onApprove={() => approvePayment(p)}
           onReject={() => rejectPayment(p.id)}
         />
@@ -193,58 +195,10 @@ function Payments() {
 /* ================== WITHDRAWALS ================== */
 
 function Withdrawals() {
-  const [withdraws, setWithdraws] = useState<any[]>([]);
-
-  const fetchWithdraws = async () => {
-    const snap = await getDocs(collection(db, "withdrawRequests"));
-    const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    setWithdraws(data.filter((w: any) => w.status === "pending"));
-  };
-
-  useEffect(() => {
-    fetchWithdraws();
-  }, []);
-
-  const approveWithdraw = async (w: any) => {
-    await updateDoc(doc(db, "withdrawRequests", w.id), {
-      status: "approved",
-    });
-
-    await updateDoc(doc(db, "users", w.userId), {
-      balance: increment(-w.amount),
-    });
-
-    alert("✅ تم قبول السحب وخصم الرصيد");
-    fetchWithdraws();
-  };
-
-  const rejectWithdraw = async (id: string) => {
-    await updateDoc(doc(db, "withdrawRequests", id), {
-      status: "rejected",
-    });
-
-    alert("❌ تم رفض السحب");
-    fetchWithdraws();
-  };
-
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">🏦 طلبات السحب</h1>
-
-      {withdraws.length === 0 && (
-        <p className="text-gray-400">✅ لا توجد طلبات سحب</p>
-      )}
-
-      {withdraws.map((w) => (
-        <RequestBox
-          key={w.id}
-          title={`👤 المستخدم: ${w.userId}`}
-          amount={`💵 المبلغ: ${w.amount}$`}
-          extra={`📌 المحفظة: ${w.wallet}`}
-          onApprove={() => approveWithdraw(w)}
-          onReject={() => rejectWithdraw(w.id)}
-        />
-      ))}
+      <h1 className="text-3xl font-bold">🏦 طلبات السحب</h1>
+      <p className="text-gray-400 mt-4">✅ موجودة عندك لاحقًا</p>
     </div>
   );
 }
@@ -254,8 +208,8 @@ function Withdrawals() {
 function Users() {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">👥 إدارة المستخدمين</h1>
-      <p className="text-gray-400">✅ موجودة عندك بالفعل</p>
+      <h1 className="text-3xl font-bold">👥 المستخدمين</h1>
+      <p className="text-gray-400 mt-4">✅ موجودة لاحقًا</p>
     </div>
   );
 }
@@ -265,8 +219,8 @@ function Users() {
 function Plans() {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">📦 إدارة الباقات</h1>
-      <p className="text-gray-400">✅ الباقات شغالة عندك بالفعل</p>
+      <h1 className="text-3xl font-bold">📦 الباقات</h1>
+      <p className="text-gray-400 mt-4">✅ جاهزة عندك</p>
     </div>
   );
 }
@@ -284,7 +238,7 @@ function AdminSettings() {
 
   const save = async () => {
     await setDoc(doc(db, "settings", "admin"), { wallet }, { merge: true });
-    alert("✅ تم حفظ الإعدادات");
+    alert("✅ تم حفظ المحفظة");
   };
 
   return (
@@ -300,7 +254,7 @@ function AdminSettings() {
 
       <button
         onClick={save}
-        className="bg-yellow-500 text-black px-6 py-3 rounded-lg font-bold"
+        className="bg-yellow-500 text-black px-6 py-3 rounded font-bold"
       >
         💾 حفظ
       </button>
@@ -324,8 +278,9 @@ function RequestBox({ title, amount, extra, onApprove, onReject }: any) {
           onClick={onApprove}
           className="bg-green-500 text-black px-5 py-2 rounded-lg font-bold"
         >
-          ✔ موافقة
+          ✔ قبول
         </button>
+
         <button
           onClick={onReject}
           className="bg-red-600 text-white px-5 py-2 rounded-lg font-bold"
