@@ -1,17 +1,16 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { Suspense } from "react";
+import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { addDoc, collection } from "firebase/firestore";
+import { auth, db } from "@/app/firebase";
 
-function PaymentContent() {
+export default function PaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const packageId = searchParams.get("package");
+  const packageId = searchParams.get("package") || "1";
 
-  // ✅ بيانات الباقات
   const packages: any = {
     1: { price: 80, profit: 1 },
     2: { price: 150, profit: 3 },
@@ -20,10 +19,32 @@ function PaymentContent() {
     5: { price: 1000, profit: 10 },
   };
 
-  const selectedPackage = packages[packageId || 1];
+  const selectedPackage = packages[packageId];
 
-  // ✅ عنوان محفظة الإدارة الرسمي
   const walletAddress = "TWa3Jc6572z52K1EkLReXJUEFF11a8C7jT";
+
+  // ✅ المبلغ اللي المستخدم هيكتبه
+  const [amount, setAmount] = useState("");
+
+  // ✅ إرسال طلب الدفع للإدارة
+  const confirmPayment = async () => {
+    if (!amount) return alert("❌ اكتب مبلغ التحويل");
+
+    const user = auth.currentUser;
+    if (!user) return alert("❌ لازم تسجل دخول الأول");
+
+    await addDoc(collection(db, "payments"), {
+      userId: user.uid,
+      amount: Number(amount),
+      packageId: Number(packageId),
+      status: "pending",
+      createdAt: new Date(),
+    });
+
+    alert("✅ تم إرسال طلب الدفع للإدارة بنجاح");
+
+    router.push("/dashboard");
+  };
 
   return (
     <div
@@ -70,21 +91,21 @@ function PaymentContent() {
           }}
         >
           <p style={{ color: "white", margin: "6px 0" }}>
-            ⭐ الباقة المختارة:{" "}
+            ⭐ الباقة المختارة:
             <span style={{ color: "gold", fontWeight: "bold" }}>
               #{packageId}
             </span>
           </p>
 
           <p style={{ color: "white", margin: "6px 0" }}>
-            💰 سعر الاشتراك:{" "}
+            💰 سعر الاشتراك:
             <span style={{ color: "gold", fontWeight: "bold" }}>
               {selectedPackage.price}$ USDT
             </span>
           </p>
 
           <p style={{ color: "white", margin: "6px 0" }}>
-            📈 الربح اليومي:{" "}
+            📈 الربح اليومي:
             <span style={{ color: "#00ff99", fontWeight: "bold" }}>
               {selectedPackage.profit}$ يومياً
             </span>
@@ -112,18 +133,27 @@ function PaymentContent() {
           {walletAddress}
         </div>
 
-        {/* ✅ Warning */}
-        <p style={{ color: "#ccc", fontSize: "13px", marginBottom: "15px" }}>
-          ⚠ بعد التحويل اضغط على زر{" "}
-          <span style={{ color: "gold" }}>تأكيد الدفع</span> وسيتم مراجعة
-          العملية من الإدارة وتفعيل اشتراكك خلال وقت قصير.
-        </p>
+        {/* ✅ Input كتابة مبلغ التحويل */}
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="💵 اكتب مبلغ التحويل بالدولار"
+          type="number"
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: "12px",
+            border: "1px solid gold",
+            background: "black",
+            color: "white",
+            marginBottom: "15px",
+            fontSize: "15px",
+          }}
+        />
 
         {/* ✅ Confirm Button */}
         <button
-          onClick={() =>
-            alert("✅ تم إرسال طلب الدفع للإدارة بنجاح! سيتم التفعيل قريباً.")
-          }
+          onClick={confirmPayment}
           style={{
             width: "100%",
             padding: "13px",
@@ -156,21 +186,5 @@ function PaymentContent() {
         </button>
       </div>
     </div>
-  );
-}
-
-/* ✅ Page Wrapper with Suspense */
-
-export default function PaymentPage() {
-  return (
-    <Suspense
-      fallback={
-        <p style={{ textAlign: "center", marginTop: "50px", color: "gray" }}>
-          ⏳ جاري تحميل صفحة الدفع...
-        </p>
-      }
-    >
-      <PaymentContent />
-    </Suspense>
   );
 }
