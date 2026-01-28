@@ -156,8 +156,27 @@ function Payments() {
     fetchPayments();
   }, []);
 
-  const approvePayment = async (p: any) => {
-    await updateDoc(doc(db, "payments", p.id), { status: "approved" });
+const approvePayment = async (p: any) => {
+
+  // ✅ تحديث حالة الإيداع Approved
+  await updateDoc(doc(db, "payments", p.id), {
+    status: "approved",
+  });
+
+  // ✅ إضافة الرصيد للمستخدم
+  await updateDoc(doc(db, "users", p.userId), {
+    balance: increment(p.amount),
+  });
+
+  // ✅ حفظ الباقة اللي اشترك فيها المستخدم
+  await updateDoc(doc(db, "users", p.userId), {
+    packageId: p.packageId || 1,
+  });
+
+  alert("✅ تم قبول الإيداع وتفعيل الباقة بنجاح");
+
+  fetchPayments();
+};
 
     const userDocId = await getUserDocId(p.userId);
 
