@@ -1,8 +1,11 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function PaymentPage() {
+function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -153,5 +156,21 @@ export default function PaymentPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+/* ✅ Page Wrapper with Suspense */
+
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <p style={{ textAlign: "center", marginTop: "50px", color: "gray" }}>
+          ⏳ جاري تحميل صفحة الدفع...
+        </p>
+      }
+    >
+      <PaymentContent />
+    </Suspense>
   );
 }
