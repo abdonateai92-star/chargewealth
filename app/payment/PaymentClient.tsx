@@ -1,8 +1,14 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default function PaymentClient() {
+import { auth, db } from "@/app/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+
+export default function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -16,124 +22,85 @@ export default function PaymentClient() {
     5: { price: 1000, profit: 10 },
   };
 
-  const selectedPackage = packages[packageId || 1];
+  const selectedPackage = packages[packageId || "1"];
+
+  const [userId, setUserId] = useState("");
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) setUserId(user.uid);
+    });
+
+    return () => unsub();
+  }, []);
 
   const walletAddress = "TWa3Jc6572z52K1EkLReXJUEFF11a8C7jT";
 
+  const confirmPayment = async () => {
+    if (!userId) return alert("❌ لازم تسجل دخول الأول");
+
+    await addDoc(collection(db, "payments"), {
+      userId,
+      amount: selectedPackage.price,
+      packageId: Number(packageId),
+      status: "pending",
+      createdAt: serverTimestamp(),
+    });
+
+    alert("✅ تم إرسال طلب الإيداع للإدارة");
+
+    router.push("/dashboard");
+  };
+
   return (
     <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(180deg, #050505, #111)",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "30px",
-        fontFamily: "Tajawal, sans-serif",
-      }}
+      dir="rtl"
+      className="min-h-screen flex justify-center items-center bg-[#0b1220] text-white p-6"
     >
-      <div
-        style={{
-          width: "420px",
-          background: "#141414",
-          border: "2px solid gold",
-          borderRadius: "20px",
-          padding: "25px",
-          boxShadow: "0px 0px 18px rgba(255,215,0,0.35)",
-        }}
-      >
-        <h2
-          style={{
-            textAlign: "center",
-            color: "gold",
-            marginBottom: "20px",
-            fontSize: "22px",
-          }}
-        >
-          💳 الدفع عبر USDT TRC20
-        </h2>
+      <div className="w-full max-w-md bg-[#020617] border border-yellow-500 rounded-3xl p-8 shadow-xl">
+        <h1 className="text-3xl font-bold text-yellow-400 text-center mb-6">
+          💳 الدفع عبر USDT
+        </h1>
 
-        <div
-          style={{
-            background: "#0d0d0d",
-            padding: "15px",
-            borderRadius: "15px",
-            border: "1px solid #333",
-            marginBottom: "20px",
-          }}
-        >
-          <p style={{ color: "white", margin: "6px 0" }}>
+        <div className="bg-black/40 border border-yellow-500 rounded-xl p-4 mb-6">
+          <p className="mb-2">
             ⭐ الباقة المختارة:
-            <span style={{ color: "gold", fontWeight: "bold" }}>
-              #{packageId}
-            </span>
+            <span className="text-yellow-400 font-bold"> #{packageId}</span>
           </p>
 
-          <p style={{ color: "white", margin: "6px 0" }}>
-            💰 سعر الاشتراك:
-            <span style={{ color: "gold", fontWeight: "bold" }}>
+          <p className="mb-2">
+            💰 السعر:
+            <span className="text-yellow-400 font-bold">
+              {" "}
               {selectedPackage.price}$ USDT
             </span>
           </p>
 
-          <p style={{ color: "white", margin: "6px 0" }}>
+          <p>
             📈 الربح اليومي:
-            <span style={{ color: "#00ff99", fontWeight: "bold" }}>
+            <span className="text-green-400 font-bold">
+              {" "}
               {selectedPackage.profit}$ يومياً
             </span>
           </p>
         </div>
 
-        <h3 style={{ color: "white", marginBottom: "10px", fontSize: "15px" }}>
-          ✅ أرسل المبلغ إلى عنوان المحفظة التالي:
-        </h3>
+        <h2 className="text-lg mb-2">✅ أرسل المبلغ إلى المحفظة:</h2>
 
-        <div
-          style={{
-            background: "#000",
-            padding: "15px",
-            borderRadius: "12px",
-            border: "1px solid gold",
-            color: "gold",
-            fontSize: "14px",
-            wordBreak: "break-word",
-            marginBottom: "15px",
-            textAlign: "center",
-          }}
-        >
+        <div className="bg-black border border-yellow-500 rounded-xl p-4 text-yellow-400 font-bold text-sm text-center break-words mb-5">
           {walletAddress}
         </div>
 
         <button
-          onClick={() =>
-            alert("✅ تم إرسال طلب الدفع للإدارة بنجاح! سيتم التفعيل قريباً.")
-          }
-          style={{
-            width: "100%",
-            padding: "13px",
-            borderRadius: "12px",
-            background: "gold",
-            border: "none",
-            fontWeight: "bold",
-            cursor: "pointer",
-            fontSize: "16px",
-          }}
+          onClick={confirmPayment}
+          className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold text-lg transition"
         >
-          ✅ تأكيد الدفع
+          ✅ تأكيد الدفع وإرسال الطلب
         </button>
 
         <button
           onClick={() => router.push("/packages")}
-          style={{
-            marginTop: "12px",
-            width: "100%",
-            padding: "12px",
-            borderRadius: "12px",
-            background: "transparent",
-            border: "1px solid gray",
-            color: "white",
-            cursor: "pointer",
-          }}
+          className="w-full mt-4 border border-gray-500 text-white py-3 rounded-xl hover:border-yellow-400 transition"
         >
           ⬅ رجوع للباقات
         </button>
