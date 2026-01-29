@@ -1,7 +1,5 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -10,7 +8,7 @@ import { onAuthStateChanged } from "firebase/auth";
 
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
-export default function PaymentPage() {
+export default function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -31,7 +29,6 @@ export default function PaymentPage() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) setUserId(user.uid);
-      else router.push("/login");
     });
 
     return () => unsub();
@@ -50,7 +47,8 @@ export default function PaymentPage() {
       createdAt: serverTimestamp(),
     });
 
-    alert("✅ تم إرسال طلب الإيداع للإدارة بنجاح");
+    alert("✅ تم إرسال طلب الإيداع للإدارة");
+
     router.push("/dashboard");
   };
 
@@ -66,20 +64,22 @@ export default function PaymentPage() {
 
         <div className="bg-black/40 border border-yellow-500 rounded-xl p-4 mb-6">
           <p className="mb-2">
-            ⭐ الباقة المختارة:{" "}
-            <span className="text-yellow-400 font-bold">#{packageId}</span>
+            ⭐ الباقة المختارة:
+            <span className="text-yellow-400 font-bold"> #{packageId}</span>
           </p>
 
           <p className="mb-2">
-            💰 السعر:{" "}
+            💰 السعر:
             <span className="text-yellow-400 font-bold">
+              {" "}
               {selectedPackage.price}$ USDT
             </span>
           </p>
 
           <p>
-            📈 الربح اليومي:{" "}
+            📈 الربح اليومي:
             <span className="text-green-400 font-bold">
+              {" "}
               {selectedPackage.profit}$ يومياً
             </span>
           </p>
