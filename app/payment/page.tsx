@@ -28,6 +28,10 @@ export default function PaymentPage() {
   // ✅ بيانات المستخدم
   const [userId, setUserId] = useState("");
 
+  // ✅ Inputs جديدة
+  const [amount, setAmount] = useState(selectedPackage.price);
+  const [txid, setTxid] = useState("");
+
   // ✅ تحميل المستخدم الحالي
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
@@ -44,10 +48,20 @@ export default function PaymentPage() {
   const confirmPayment = async () => {
     if (!userId) return alert("❌ لازم تسجل دخول الأول");
 
+    if (!txid)
+      return alert("❌ لازم تدخل رقم العملية Transaction Hash (TXID)");
+
     await addDoc(collection(db, "payments"), {
       userId: userId,
-      amount: selectedPackage.price,
+
+      // ✅ المستخدم يكتب بنفسه المبلغ اللي حوله
+      amount: Number(amount),
+
       packageId: Number(packageId),
+
+      // ✅ رقم العملية
+      txid: txid,
+
       status: "pending",
       createdAt: serverTimestamp(),
     });
@@ -72,13 +86,11 @@ export default function PaymentPage() {
         <div className="bg-black/40 border border-yellow-500 rounded-xl p-4 mb-6">
           <p className="mb-2">
             ⭐ الباقة المختارة:{" "}
-            <span className="text-yellow-400 font-bold">
-              #{packageId}
-            </span>
+            <span className="text-yellow-400 font-bold">#{packageId}</span>
           </p>
 
           <p className="mb-2">
-            💰 السعر:{" "}
+            💰 السعر الرسمي:{" "}
             <span className="text-yellow-400 font-bold">
               {selectedPackage.price}$ USDT
             </span>
@@ -95,16 +107,39 @@ export default function PaymentPage() {
         {/* ✅ Wallet */}
         <h2 className="text-lg mb-2">✅ أرسل المبلغ إلى المحفظة:</h2>
 
-        <div className="bg-black border border-yellow-500 rounded-xl p-4 text-yellow-400 font-bold text-sm text-center break-words mb-5">
+        <div className="bg-black border border-yellow-500 rounded-xl p-4 text-yellow-400 font-bold text-sm text-center break-words mb-6">
           {walletAddress}
         </div>
 
+        {/* ✅ Input Amount */}
+        <label className="block mb-2 text-gray-300">
+          💵 أدخل المبلغ الذي قمت بتحويله:
+        </label>
+
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-full p-3 mb-5 rounded-xl bg-black border border-gray-600 focus:border-yellow-400 outline-none"
+        />
+
+        {/* ✅ Input TXID */}
+        <label className="block mb-2 text-gray-300">
+          🔗 أدخل رقم العملية Transaction Hash (TXID):
+        </label>
+
+        <input
+          type="text"
+          value={txid}
+          onChange={(e) => setTxid(e.target.value)}
+          placeholder="مثال: 9d8f7a1b..."
+          className="w-full p-3 mb-6 rounded-xl bg-black border border-gray-600 focus:border-yellow-400 outline-none"
+        />
+
         {/* ✅ Warning */}
         <p className="text-gray-400 text-sm mb-5 leading-relaxed">
-          ⚠ بعد التحويل اضغط على زر{" "}
-          <span className="text-yellow-400 font-bold">تأكيد الدفع</span>
-          <br />
-          وسيتم مراجعة العملية من الإدارة وتفعيل اشتراكك قريباً ✅
+          ⚠ بعد التحويل اكتب رقم العملية واضغط تأكيد الدفع  
+          وسيقوم الأدمن بمراجعتها وتفعيل اشتراكك ✅
         </p>
 
         {/* ✅ Confirm Button */}

@@ -1,110 +1,144 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { addDoc, collection, doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/app/firebase";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import { auth, db, storage } from "@/app/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+
+import { addDoc, collection, getDoc, doc } from "firebase/firestore";
+
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function DepositPage() {
-  const [amount, setAmount] = useState("");
-  const [walletAddress, setWalletAddress] = useState("");
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  /* ✅ تحميل محفظة الأدمن من Firestore */
+  const [user, setUser] = useState<any>(null);
+
+  const [amount, setAmount] = useState("");
+  const [txid, setTxid] = useState("");
+  const [file, setFile] = useState<any>(null);
+
+  const [adminWallet, setAdminWallet] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
+  /* ✅ تحميل محفظة الأدمن */
   useEffect(() => {
     const fetchWallet = async () => {
       const snap = await getDoc(doc(db, "settings", "admin"));
-
       if (snap.exists()) {
-        const data: any = snap.data();
-        setWalletAddress(data.wallet || "");
+        setAdminWallet((snap.data() as any).wallet);
       }
-
-      setLoading(false);
     };
 
     fetchWallet();
   }, []);
 
-  /* ✅ إرسال طلب الإيداع للأدمن */
-  const submitDeposit = async () => {
-    const user = auth.currentUser;
-
-    if (!user) {
-      alert("❌ لازم تسجل دخول الأول");
-      return;
-    }
-
-    if (!amount) {
-      alert("❌ اكتب مبلغ الإيداع");
-      return;
-    }
-
-    if (!walletAddress) {
-      alert("❌ محفظة الإدارة غير موجودة");
-      return;
-    }
-
-    await addDoc(collection(db, "payments"), {
-      userId: user.uid,
-      amount: Number(amount),
-      status: "pending",
-      createdAt: new Date(),
+  /* ✅ تحميل المستخدم */
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      if (!u) router.push("/login");
+      else setUser(u);
     });
 
-    alert("✅ تم إرسال طلب الإيداع للأدمن بنجاح");
+    return () => unsub();
+  }, []);
 
-    setAmount("");
+  /* ✅ إرسال طلب الإيداع */
+  const submitDeposit = async () => {
+    if (!amount || !txid || !file)
+      return alert("❌ لازم تدخل المبلغ + رقم العملية + صورة التحويل");
+
+    setLoading(true);
+
+    try {
+      /* ✅ رفع الصورة */
+      const storageRef = ref(
+        storage,
+        `payments/${user.uid}/${Date.now()}-${file.name}`
+      );
+
+      await uploadBytes(storageRef, file);
+
+      const imageUrl = await getDownloadURL(storageRef);
+
+      /* ✅ حفظ الطلب في Firestore */
+      await addDoc(collection(db, "payments"), {
+        userId: user.uid,
+        email: user.email,
+        amount: Number(amount),
+        txid,
+        screenshot: imageUrl,
+        status: "pending",
+        createdAt: new Date(),
+      });
+
+      alert("✅ تم إرسال طلب الإيداع");
+
+      setAmount("");
+      setTxid("");
+      setFile(null);
+    } catch (err) {
+      alert("❌ حصل خطأ");
+    }
+
+    setLoading(false);
   };
-
-  /* ✅ Loading */
-  if (loading)
-    return (
-      <p className="text-center text-gray-400 mt-20 text-xl">
-        ⏳ جاري تحميل بيانات الإيداع...
-      </p>
-    );
 
   return (
     <div
       dir="rtl"
       className="min-h-screen bg-[#0b1220] text-white flex justify-center items-center p-6"
     >
-      <div className="w-full max-w-xl bg-[#020617] border border-yellow-500 rounded-3xl p-10 shadow-xl">
-        
-        {/* ✅ Title */}
+      <div className="w-full max-w-xl bg-[#020617] border border-yellow-500 rounded-3xl p-10">
+
         <h1 className="text-4xl font-bold text-yellow-400 text-center mb-8">
           💰 صفحة الإيداع
         </h1>
 
-        {/* ✅ Admin Wallet */}
-        <p className="text-gray-300 text-center mb-4">
-          قم بتحويل المبلغ إلى محفظة الإدارة التالية:
-        </p>
+        {/* ✅ محفظة الأدمن */}
+        <div className="bg-black border border-yellow-400 rounded-xl p-4 mb-6 text-center">
+          <p className="text-gray-300 mb-2">✅ ابعت الفلوس على المحفظة دي:</p>
 
-        <div className="bg-black border border-yellow-400 p-4 rounded-xl text-center mb-6 text-yellow-400 font-bold break-all">
-          {walletAddress}
+          <p className="text-yellow-400 font-bold break-all">
+            {adminWallet}
+          </p>
         </div>
 
-        {/* ✅ Amount Input */}
+        {/* ✅ مبلغ الإيداع */}
         <input
           type="number"
+          placeholder="💵 مبلغ الإيداع بالدولار"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          placeholder="💵 اكتب مبلغ الإيداع بالدولار"
-          className="w-full p-4 rounded-xl bg-black border border-yellow-500 mb-6"
+          className="w-full p-4 rounded-xl bg-black border border-yellow-500 mb-4"
         />
 
-        {/* ✅ Submit */}
-        <button
-          onClick={submitDeposit}
-          className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold text-lg transition"
-        >
-          ✅ تأكيد الإيداع
-        </button>
+        {/* ✅ رقم العملية */}
+        <input
+          placeholder="🔑 رقم العملية TxID"
+          value={txid}
+          onChange={(e) => setTxid(e.target.value)}
+          className="w-full p-4 rounded-xl bg-black border border-yellow-500 mb-4"
+        />
 
-        <p className="text-gray-400 text-sm mt-6 text-center">
-          بعد التأكيد سيتم إرسال الطلب مباشرة إلى لوحة الأدمن للمراجعة.
-        </p>
+        {/* ✅ رفع الصورة */}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0])}
+          className="w-full p-3 rounded-xl bg-black border border-yellow-500 mb-6"
+        />
+
+        {/* ✅ إرسال */}
+        <button
+          disabled={loading}
+          onClick={submitDeposit}
+          className="w-full bg-yellow-500 text-black py-4 rounded-xl font-bold"
+        >
+          {loading ? "⏳ جاري الإرسال..." : "✅ إرسال طلب الإيداع"}
+        </button>
       </div>
     </div>
   );
