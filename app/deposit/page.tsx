@@ -1,12 +1,16 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { auth, db } from "@/app/firebase";
+import { auth, db, storage } from "@/app/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { addDoc, collection, getDoc, doc, serverTimestamp } from "firebase/firestore";
+
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function DepositPage() {
   const router = useRouter();
@@ -15,8 +19,10 @@ export default function DepositPage() {
 
   const [amount, setAmount] = useState("");
   const [txid, setTxid] = useState("");
+  const [file, setFile] = useState<any>(null);
 
   const [adminWallet, setAdminWallet] = useState("");
+
   const [loading, setLoading] = useState(false);
 
   /* ✅ تحميل محفظة الأدمن */
@@ -43,27 +49,42 @@ export default function DepositPage() {
 
   /* ✅ إرسال طلب الإيداع */
   const submitDeposit = async () => {
-    if (!amount || !txid)
-      return alert("❌ لازم تدخل المبلغ + رقم العملية TxID");
+    if (!amount || !txid || !file)
+      return alert("❌ لازم تدخل المبلغ + رقم العملية + صورة التحويل");
 
     setLoading(true);
 
     try {
+      /* ✅ رفع الصورة */
+      const storageRef = ref(
+        storage,
+        `payments/${user.uid}/${Date.now()}-${file.name}`
+      );
+
+      await uploadBytes(storageRef, file);
+
+      const imageUrl = await getDownloadURL(storageRef);
+
+      /* ✅ حفظ الطلب في Firestore */
       await addDoc(collection(db, "payments"), {
         userId: user.uid,
         email: user.email,
         amount: Number(amount),
         txid,
+        screenshot: imageUrl,
         status: "pending",
         createdAt: serverTimestamp(),
       });
 
-      alert("✅ تم إرسال طلب الإيداع للإدارة بنجاح");
+      alert("✅ تم إرسال طلب الإيداع للإدارة");
 
       setAmount("");
       setTxid("");
+      setFile(null);
+
+      router.push("/dashboard");
     } catch (err) {
-      alert("❌ حصل خطأ أثناء الإرسال");
+      alert("❌ حصل خطأ أثناء رفع الطلب");
     }
 
     setLoading(false);
@@ -75,7 +96,6 @@ export default function DepositPage() {
       className="min-h-screen bg-[#0b1220] text-white flex justify-center items-center p-6"
     >
       <div className="w-full max-w-xl bg-[#020617] border border-yellow-500 rounded-3xl p-10">
-
         <h1 className="text-4xl font-bold text-yellow-400 text-center mb-8">
           💰 صفحة الإيداع
         </h1>
@@ -85,7 +105,7 @@ export default function DepositPage() {
           <p className="text-gray-300 mb-2">✅ ابعت الفلوس على المحفظة دي:</p>
 
           <p className="text-yellow-400 font-bold break-all">
-            {adminWallet || "جارٍ التحميل..."}
+            {adminWallet}
           </p>
         </div>
 
@@ -103,18 +123,25 @@ export default function DepositPage() {
           placeholder="🔑 رقم العملية TxID"
           value={txid}
           onChange={(e) => setTxid(e.target.value)}
-          className="w-full p-4 rounded-xl bg-black border border-yellow-500 mb-6"
+          className="w-full p-4 rounded-xl bg-black border border-yellow-500 mb-4"
+        />
+
+        {/* ✅ رفع الصورة */}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setFile(e.target.files?.[0])}
+          className="w-full p-3 rounded-xl bg-black border border-yellow-500 mb-6"
         />
 
         {/* ✅ إرسال */}
         <button
           disabled={loading}
           onClick={submitDeposit}
-          className="w-full bg-yellow-500 text-black py-4 rounded-xl font-bold hover:bg-yellow-400 transition"
+          className="w-full bg-yellow-500 text-black py-4 rounded-xl font-bold"
         >
           {loading ? "⏳ جاري الإرسال..." : "✅ إرسال طلب الإيداع"}
         </button>
-
       </div>
     </div>
   );
