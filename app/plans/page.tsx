@@ -44,14 +44,14 @@ export default function PlansPage() {
 
       {/* ✅ Plans Grid */}
       <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
-        {plans.map((plan) => (
+        {plans.map((plan, index) => (
           <div
             key={plan.id}
             className="bg-[#020617] border border-yellow-500 rounded-3xl p-8 shadow-xl hover:scale-[1.03] transition duration-300"
           >
-            {/* ✅ Plan Name */}
+            {/* ✅ Plan Title */}
             <h2 className="text-3xl font-bold text-yellow-400 mb-4">
-              {plan.name}
+              ⭐ الباقة رقم {index + 1}
             </h2>
 
             {/* ✅ Price */}
@@ -80,7 +80,9 @@ export default function PlansPage() {
 
             {/* ✅ Subscribe Button */}
             <button
-              onClick={() => router.push("/deposit")}
+              onClick={() =>
+                router.push(`/deposit?package=${plan.id}`)
+              }
               className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold text-lg transition"
             >
               🚀 اشترك الآن
