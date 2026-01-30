@@ -137,11 +137,27 @@ function Payments() {
     fetchPayments();
   }, []);
 
-  const approvePayment = async (p: any) => {
-    try {
-      await updateDoc(doc(db, "payments", p.id), {
-        status: "approved",
-      });
+ const approvePayment = async (p: any) => {
+  try {
+    // ✅ تحديث حالة الطلب Approved
+    await updateDoc(doc(db, "payments", p.id), {
+      status: "approved",
+    });
+
+    // ✅ إضافة الرصيد للمستخدم مباشرة
+    await updateDoc(doc(db, "users", p.userId), {
+      balance: increment(p.amount),
+      packageId: p.packageId || 1,
+    });
+
+    alert("✅ تم قبول الإيداع وإضافة الرصيد");
+
+    fetchPayments();
+  } catch (err) {
+    alert("❌ حصل خطأ أثناء الموافقة");
+    console.log(err);
+  }
+};
 
       const snap = await getDocs(
         query(collection(db, "users"), where("userId", "==", p.userId))
