@@ -1,46 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "@/app/firebase";
 import { useRouter } from "next/navigation";
 
 export default function PlansPage() {
-  const [plans, setPlans] = useState<any[]>([]);
   const router = useRouter();
 
-  // ✅ تحميل الباقات الفعالة فقط
-  useEffect(() => {
-    const fetchPlans = async () => {
-      const q = query(
-        collection(db, "plans"),
-        where("active", "==", true),
-        orderBy("createdAt", "desc")
-      );
-
-      const snap = await getDocs(q);
-
-      const data = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      setPlans(data);
-    };
-
-    fetchPlans();
-  }, []);
+  // ✅ الباقات ثابتة
+  const plans = [
+    { id: 1, name: "باقة البداية", price: 80, profit: 1 },
+    { id: 2, name: "باقة متوسطة", price: 150, profit: 3 },
+    { id: 3, name: "باقة قوية", price: 300, profit: 6 },
+    { id: 4, name: "باقة VIP", price: 500, profit: 8 },
+    { id: 5, name: "باقة الأسطورة", price: 1000, profit: 10 },
+  ];
 
   return (
     <div
       dir="rtl"
-      className="min-h-screen bg-[#0b1220] text-white px-6 py-14"
+      className="min-h-screen bg-[#0b1220] text-white px-6 py-16"
     >
       {/* ✅ Header */}
       <div className="text-center mb-14">
@@ -48,44 +25,51 @@ export default function PlansPage() {
           📦 الباقات الاستثمارية
         </h1>
 
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+        <p className="text-gray-400 text-lg max-w-2xl mx-auto leading-relaxed">
           اختر الباقة المناسبة وابدأ الاستثمار مع منصة{" "}
-          <span className="text-yellow-400 font-bold">
-            Charge Wealth
-          </span>
+          <span className="text-yellow-400 font-bold">Charge Wealth</span> 💰
         </p>
       </div>
 
-      {/* ✅ Plans */}
+      {/* ✅ Plans Grid */}
       <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className="bg-[#020617] border border-yellow-500 rounded-3xl p-8 shadow-xl"
+            className="bg-[#020617] border border-yellow-500 rounded-3xl p-8 shadow-xl hover:scale-[1.05] transition duration-300"
           >
+            {/* ✅ Plan Name */}
             <h2 className="text-3xl font-bold text-yellow-400 mb-4">
               {plan.name}
             </h2>
 
-            <p className="text-gray-300 mb-2">
+            {/* ✅ Price */}
+            <p className="text-gray-300 text-lg mb-3">
               💳 السعر:
               <span className="text-yellow-400 font-bold text-2xl ml-2">
                 {plan.price}$
               </span>
             </p>
 
-            <p className="text-gray-300 mb-6">
+            {/* ✅ Profit */}
+            <p className="text-gray-300 text-lg mb-6">
               📈 الربح اليومي:
               <span className="text-green-400 font-bold text-xl ml-2">
-                {plan.dailyProfit}$
+                {plan.profit}$
               </span>
             </p>
 
-            {/* ✅ Subscribe */}
+            {/* ✅ Features */}
+            <ul className="text-gray-400 text-sm space-y-2 mb-8">
+              <li>✅ أرباح يومية ثابتة</li>
+              <li>✅ سحب خلال 4 أيام عمل</li>
+              <li>✅ دعم فني مباشر</li>
+              <li>✅ نظام استثمار آمن 100%</li>
+            </ul>
+
+            {/* ✅ Subscribe Button */}
             <button
-              onClick={() =>
-                router.push(`/deposit?plan=${plan.id}`)
-              }
+              onClick={() => router.push("/deposit")}
               className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold text-lg transition"
             >
               🚀 اشترك الآن
@@ -93,13 +77,6 @@ export default function PlansPage() {
           </div>
         ))}
       </div>
-
-      {/* ✅ لو مفيش باقات */}
-      {plans.length === 0 && (
-        <p className="text-center text-gray-500 mt-20 text-xl">
-          ⚠️ لا توجد باقات متاحة الآن
-        </p>
-      )}
     </div>
   );
 }
