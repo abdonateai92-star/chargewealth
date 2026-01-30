@@ -190,34 +190,50 @@ function Payments() {
 
 function Plans() {
   const [plans, setPlans] = useState<any[]>([]);
+
+  // ✅ Inputs
+  const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [profit, setProfit] = useState("");
 
+  // ✅ تحميل الباقات
   const fetchPlans = async () => {
     const snap = await getDocs(collection(db, "plans"));
-    setPlans(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+
+    const data = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
+
+    setPlans(data);
   };
 
   useEffect(() => {
     fetchPlans();
   }, []);
 
+  // ✅ إضافة باقة جديدة
   const addPlan = async () => {
-    if (!price || !profit) return alert("❌ أدخل السعر والربح");
+    if (!name || !price || !profit)
+      return alert("❌ أدخل اسم الباقة + السعر + الربح");
 
     await addDoc(collection(db, "plans"), {
+      name: name,
       price: Number(price),
       dailyProfit: Number(profit),
+      active: true,
+      createdAt: new Date(),
     });
 
+    setName("");
     setPrice("");
     setProfit("");
 
-    alert("✅ تمت إضافة الباقة");
-
+    alert("✅ تمت إضافة الباقة بنجاح");
     fetchPlans();
   };
 
+  // ✅ حذف باقة
   const deletePlan = async (id: string) => {
     await deleteDoc(doc(db, "plans", id));
     alert("✅ تم حذف الباقة");
@@ -228,53 +244,78 @@ function Plans() {
     <div>
       <h1 className="text-3xl font-bold mb-6">📦 إدارة الباقات</h1>
 
-      {/* إضافة باقة */}
-      <div className="bg-black p-6 rounded-xl border border-yellow-500 mb-6">
+      {/* ✅ إضافة باقة */}
+      <div className="bg-black p-6 rounded-xl border border-yellow-500 mb-6 space-y-3">
+        {/* اسم الباقة */}
+        <input
+          placeholder="اسم الباقة"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full p-3 rounded bg-[#111] border border-yellow-500"
+        />
+
+        {/* السعر */}
         <input
           placeholder="السعر بالدولار"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          className="w-full mb-3 p-3 rounded bg-[#111]"
+          type="number"
+          className="w-full p-3 rounded bg-[#111] border border-yellow-500"
         />
 
+        {/* الربح اليومي */}
         <input
-          placeholder="الربح اليومي"
+          placeholder="الربح اليومي بالدولار"
           value={profit}
           onChange={(e) => setProfit(e.target.value)}
-          className="w-full mb-3 p-3 rounded bg-[#111]"
+          type="number"
+          className="w-full p-3 rounded bg-[#111] border border-yellow-500"
         />
 
+        {/* زر إضافة */}
         <button
           onClick={addPlan}
-          className="w-full bg-yellow-500 text-black py-3 rounded font-bold"
+          className="w-full bg-yellow-500 text-black py-3 rounded font-bold hover:bg-yellow-400 transition"
         >
           ➕ إضافة باقة جديدة
         </button>
       </div>
 
-      {/* عرض الباقات */}
+      {/* ✅ عرض الباقات */}
+      {plans.length === 0 && (
+        <p className="text-gray-400">⚠️ لا توجد باقات حالياً</p>
+      )}
+
       {plans.map((p) => (
         <div
           key={p.id}
-          className="bg-[#020617] border border-yellow-500 rounded-xl p-4 mb-3 flex justify-between"
+          className="bg-[#020617] border border-yellow-500 rounded-xl p-5 mb-3 flex justify-between items-center"
         >
           <div>
-            💰 السعر: {p.price}$ <br />
-            📈 الربح اليومي: {p.dailyProfit}$
+            <p className="text-xl font-bold text-yellow-400">
+              {p.name}
+            </p>
+
+            <p className="text-gray-300">
+              💰 السعر: {p.price}$
+            </p>
+
+            <p className="text-green-400 font-bold">
+              📈 الربح اليومي: {p.dailyProfit}$
+            </p>
           </div>
 
           <button
             onClick={() => deletePlan(p.id)}
-            className="bg-red-600 px-4 py-2 rounded font-bold"
+            className="bg-red-600 px-4 py-2 rounded font-bold hover:bg-red-500 transition"
           >
-            حذف
+            🗑 حذف
           </button>
         </div>
       ))}
     </div>
   );
 }
-
 /* ================== SETTINGS ================== */
 
 function AdminSettings() {
