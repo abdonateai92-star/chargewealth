@@ -80,13 +80,13 @@ export default function PlansPage() {
 
             {/* ✅ Subscribe Button */}
             <button
-              onClick={() =>
-                router.push(`/deposit?package=${plan.id}`)
-              }
-              className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold text-lg transition"
-            >
-              🚀 اشترك الآن
-            </button>
+  onClick={() =>
+    router.push(`/deposit?plan=${plan.id}`)
+  }
+  className="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-4 rounded-xl font-bold text-lg transition"
+>
+  🚀 اشترك الآن
+</button>
           </div>
         ))}
       </div>
