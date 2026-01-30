@@ -11,6 +11,9 @@ export default function DashboardPage() {
 
   const [balance, setBalance] = useState(0);
 
+  // ✅ إعلان الأدمن
+  const [announcement, setAnnouncement] = useState("");
+
   // ✅ التعدين
   const [mining, setMining] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -29,7 +32,20 @@ export default function DashboardPage() {
     return () => unsub();
   }, []);
 
-  // ✅ تحميل حالة التعدين من التخزين (حتى لو خرج)
+  // ✅ تحميل الإعلان من Firestore
+  useEffect(() => {
+    const fetchAnnouncement = async () => {
+      const snap = await getDoc(doc(db, "settings", "announcement"));
+
+      if (snap.exists()) {
+        setAnnouncement((snap.data() as any).text || "");
+      }
+    };
+
+    fetchAnnouncement();
+  }, []);
+
+  // ✅ تحميل حالة التعدين من التخزين
   useEffect(() => {
     const savedTime = localStorage.getItem("mining_end");
 
@@ -94,7 +110,6 @@ export default function DashboardPage() {
       }
     }
 
-    // ✅ تشغيل التعدين
     setMining(true);
     setSecondsLeft(miningDuration);
 
@@ -110,6 +125,13 @@ export default function DashboardPage() {
       className="min-h-screen bg-[#0b1220] text-white flex justify-center items-center"
     >
       <div className="w-[95%] max-w-6xl bg-[#0f172a] rounded-3xl p-6 shadow-xl">
+
+        {/* ✅ Announcement Bar */}
+        {announcement && (
+          <div className="mb-5 bg-yellow-500/10 border border-yellow-400 text-yellow-300 px-6 py-3 rounded-xl text-center font-bold">
+            📢 {announcement}
+          </div>
+        )}
 
         {/* ✅ Header */}
         <div className="flex justify-between items-center mb-6">
@@ -168,9 +190,7 @@ export default function DashboardPage() {
                 <h2 className="text-4xl font-bold text-yellow-400">
                   {progress}%
                 </h2>
-                <p className="text-gray-400 mt-2">
-                  أرباح التعدين
-                </p>
+                <p className="text-gray-400 mt-2">أرباح التعدين</p>
               </div>
             </div>
           </div>
@@ -179,23 +199,19 @@ export default function DashboardPage() {
           <div className="bg-[#020617] border border-yellow-500 rounded-3xl p-10 flex flex-col justify-center">
 
             <h2 className="text-3xl font-bold mb-4 text-yellow-400">
-              {mining
-                ? "✅ التعدين يعمل الآن"
-                : "🔋 اضغط لتشغيل الباور بنك"}
+              {mining ? "✅ التعدين يعمل الآن" : "🔋 اضغط لتشغيل الباور بنك"}
             </h2>
 
             <p className="text-gray-300 text-lg mb-6">
               التعدين لمدة <b>3 ساعات يومياً</b> ثم يمكنك السحب ✅
             </p>
 
-            {/* ✅ Timer */}
             {mining && (
               <div className="bg-black border border-yellow-400 rounded-full px-6 py-4 text-center text-2xl font-bold mb-4">
                 ⏳ {formatTime(secondsLeft)}
               </div>
             )}
 
-            {/* ✅ Start Mining Button */}
             {!mining && (
               <button
                 onClick={startMining}
