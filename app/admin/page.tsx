@@ -119,12 +119,12 @@ function StatCard({ title, value }: any) {
   );
 }
 
-/* ================== PAYMENTS (طلبات الإيداع) ================== */
+/* ================== PAYMENTS ================== */
 
 function Payments() {
   const [payments, setPayments] = useState<any[]>([]);
 
-  // ✅ تحميل طلبات الإيداع
+  // ✅ تحميل الطلبات المعلقة فقط
   const fetchPayments = async () => {
     const snap = await getDocs(collection(db, "payments"));
 
@@ -133,7 +133,6 @@ function Payments() {
       ...d.data(),
     }));
 
-    // ✅ فقط الطلبات pending
     setPayments(data.filter((p: any) => p.status === "pending"));
   };
 
@@ -141,25 +140,42 @@ function Payments() {
     fetchPayments();
   }, []);
 
-  // ✅ قبول الإيداع
+  // ✅ الموافقة على الإيداع
   const approvePayment = async (p: any) => {
-    // تحديث حالة الطلب
-    await updateDoc(doc(db, "payments", p.id), {
-      status: "approved",
-    });
+    try {
+      // ✅ 1) تحديث حالة الطلب
+      await updateDoc(doc(db, "payments", p.id), {
+        status: "approved",
+      });
 
-    // إضافة الرصيد + حفظ الباقة
-    await updateDoc(doc(db, "users", p.userId), {
-      balance: increment(p.amount),
-      packageId: p.packageId || 1,
-    });
+      // ✅ 2) نجيب Document ID الحقيقي بتاع المستخدم
+      const snap = await getDocs(
+        query(collection(db, "users"), where("userId", "==", p.userId))
+      );
 
-    alert("✅ تم قبول الإيداع وشحن الرصيد");
+      if (snap.empty) {
+        alert("❌ المستخدم غير موجود في قاعدة البيانات");
+        return;
+      }
 
-    fetchPayments();
+      const userDocId = snap.docs[0].id;
+
+      // ✅ 3) إضافة الرصيد + تفعيل الباقة
+      await updateDoc(doc(db, "users", userDocId), {
+        balance: increment(p.amount),
+        packageId: p.packageId || 1,
+      });
+
+      alert("✅ تم قبول الإيداع وتفعيل الباقة");
+
+      fetchPayments();
+    } catch (err) {
+      alert("❌ حصل خطأ أثناء القبول");
+      console.log(err);
+    }
   };
 
-  // ✅ رفض الإيداع
+  // ✅ رفض الطلب
   const rejectPayment = async (id: string) => {
     await updateDoc(doc(db, "payments", id), {
       status: "rejected",
@@ -175,7 +191,7 @@ function Payments() {
       <h1 className="text-3xl font-bold mb-6">💰 طلبات الإيداع</h1>
 
       {payments.length === 0 && (
-        <p className="text-gray-400">✅ لا توجد طلبات حالياً</p>
+        <p className="text-gray-400">✅ لا توجد طلبات إيداع حالياً</p>
       )}
 
       {payments.map((p) => (
@@ -183,7 +199,7 @@ function Payments() {
           key={p.id}
           title={`👤 المستخدم: ${p.userId}`}
           amount={`💵 المبلغ: ${p.amount}$`}
-          extra={`📦 الباقة: ${p.packageId}`}
+          extra={`📦 الباقة: #${p.packageId}`}
           onApprove={() => approvePayment(p)}
           onReject={() => rejectPayment(p.id)}
         />
